@@ -16,3 +16,7 @@ env/
 
 # OS
 .DS_Store
+
+# Screenshots / прочие локальные изображения
+Снимок экрана*.png
+*.png
