@@ -1,3 +1,5 @@
+"""Платформа совместных покупок — начальный сценарий (ПР1)."""
+
 from datetime import date
 
 # --- Данные совместной покупки (простые типы) ---
@@ -47,9 +49,12 @@ if can_join(current_participants, max_participants):
     current_participants = current_participants + 1
     cost = participant_cost(product_price, commission_percent)
     # преобразование типов: округляем и приводим к int для вывода
-    cost_int = int(round(cost))
+    cost_int = round(cost)
     print("Вы присоединились к совместной покупке!")
-    print(f"Стоимость вашего участия: {cost_int} руб. (с комиссией {commission_percent}%)")
+    print(
+        f"Стоимость вашего участия: {cost_int} руб. "
+        f"(с комиссией {commission_percent}%)",
+    )
 else:
     print("К сожалению, свободных мест нет.")
 
