@@ -1,5 +1,8 @@
 [flake8]
-# main.py — консольный скрипт-сценарий ПР1: вывод через print намеренный,
-# поэтому правило flake8-print (T201) для него отключено.
+max-line-length = 79
+exclude = .venv,.git,__pycache__,.pytest_cache
+# main.py и utils.py — консольный ввод/вывод через print намеренный,
+# поэтому правило flake8-print (T201) для них отключено.
 per-file-ignores =
     main.py: T201
+    utils.py: T201

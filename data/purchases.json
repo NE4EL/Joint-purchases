@@ -1,0 +1,23 @@
+[
+    {
+        "id": 1,
+        "product": "Кофе в зёрнах, 1 кг",
+        "price": 1200.0,
+        "min_participants": 5,
+        "max_participants": 10
+    },
+    {
+        "id": 2,
+        "product": "Оливковое масло, 5 л",
+        "price": 3500.0,
+        "min_participants": 3,
+        "max_participants": 8
+    },
+    {
+        "id": 3,
+        "product": "Стиральный порошок, 10 кг",
+        "price": 2100.0,
+        "min_participants": 4,
+        "max_participants": 12
+    }
+]
