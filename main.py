@@ -1,24 +1,29 @@
-"""Платформа совместных покупок — точка входа приложения (ПР2)."""
+"""Платформа совместных покупок — точка входа приложения (ПР3)."""
 
-from participations import (
+from models import Participation, Purchase, User
+from models.participations import (
     cancel_participation,
-    count_participants,
+    count_active,
     join_purchase,
     purchase_status,
 )
-from purchases import (
+from models.purchases import (
     filter_purchases_by_price,
     find_purchase,
+    find_purchase_by_id,
     sort_purchases,
 )
+from models.users import find_user_by_id
 from storage import (
     load_participations,
     load_purchases,
+    load_users,
     save_participations,
 )
 from utils import input_int, input_str
 
 PURCHASES_FILE = "data/purchases.json"
+USERS_FILE = "data/users.json"
 PARTICIPATIONS_FILE = "data/participations.json"
 
 MENU = (
@@ -27,65 +32,71 @@ MENU = (
     "2. Найти покупку по названию\n"
     "3. Отобрать покупки не дороже суммы\n"
     "4. Показать покупки по возрастанию цены\n"
-    "5. Присоединиться к покупке\n"
-    "6. Отменить участие\n"
-    "7. Показать участия\n"
+    "5. Показать пользователей\n"
+    "6. Присоединиться к покупке\n"
+    "7. Отменить участие\n"
+    "8. Показать участия\n"
     "0. Выход"
 )
 
 
 def show_purchases(
-    purchases: dict[int, dict],
-    participations: list[dict],
+    purchases: list[Purchase],
+    participations: list[Participation],
 ) -> None:
-    """Вывести список совместных покупок с числом участников."""
+    """Вывести список совместных покупок со статусом набора."""
     if not purchases:
         print("Список совместных покупок пуст.")
         return
-    for purchase_id, data in purchases.items():
-        current = count_participants(participations, purchase_id)
-        status = purchase_status(current, data["min_participants"])
+    for purchase in purchases:
+        current = count_active(participations, purchase)
+        status = purchase_status(participations, purchase)
         print(
-            f"{purchase_id}. {data['product']} — "
-            f"{data['price']} руб., участников "
-            f"{current}/{data['max_participants']} ({status})",
+            f"{purchase} участников "
+            f"{current}/{purchase.max_participants} ({status})",
         )
 
 
-def show_participations(
-    participations: list[dict],
-    purchases: dict[int, dict],
-) -> None:
-    """Вывести список участий в покупках."""
+def show_users(users: list[User]) -> None:
+    """Вывести список пользователей."""
+    if not users:
+        print("Список пользователей пуст.")
+        return
+    for user in users:
+        print(user)
+
+
+def show_participations(participations: list[Participation]) -> None:
+    """Вывести список участий."""
     if not participations:
         print("Пока нет ни одного участия.")
         return
     for item in participations:
-        purchase = purchases.get(item["purchase_id"])
-        product = purchase["product"] if purchase else "неизвестный товар"
-        print(f"{item['id']}. {item['user']} — {product}")
+        print(item)
 
 
-def join_action(
-    purchases: dict[int, dict],
-    participations: list[dict],
+def create_new_participation(
+    purchases: list[Purchase],
+    users: list[User],
+    participations: list[Participation],
 ) -> None:
-    """Присоединить участника к выбранной покупке."""
-    purchase_id = input_int("Номер покупки: ")
-    if purchase_id not in purchases:
+    """Создать участие: выбрать покупку и пользователя, проверить места."""
+    purchase = find_purchase_by_id(purchases, input_int("Номер покупки: "))
+    if purchase is None:
         print("Покупка с таким номером не найдена.")
         return
-    user = input_str("Ваше имя: ")
-    max_participants = purchases[purchase_id]["max_participants"]
-    try:
-        join_purchase(participations, purchase_id, user, max_participants)
-    except ValueError as error:
-        print(error)
+    user = find_user_by_id(users, input_int("Ваш номер пользователя: "))
+    if user is None:
+        print("Пользователь с таким номером не найден.")
         return
-    print("Вы успешно присоединились к покупке.")
+    participation = join_purchase(participations, purchase, user)
+    if participation is None:
+        print("Свободных мест в покупке больше нет.")
+        return
+    print(f"Участие создано: {participation}")
 
 
-def cancel_action(participations: list[dict]) -> None:
+def cancel_action(participations: list[Participation]) -> None:
     """Отменить участие по его номеру."""
     participation_id = input_int("Номер участия для отмены: ")
     if cancel_participation(participations, participation_id):
@@ -96,8 +107,9 @@ def cancel_action(participations: list[dict]) -> None:
 
 def process(
     choice: int,
-    purchases: dict[int, dict],
-    participations: list[dict],
+    purchases: list[Purchase],
+    users: list[User],
+    participations: list[Participation],
 ) -> None:
     """Выполнить выбранное пользователем действие меню."""
     if choice == 1:
@@ -107,16 +119,18 @@ def process(
         show_purchases(find_purchase(purchases, query), participations)
     elif choice == 3:
         max_price = input_int("Максимальная цена, руб.: ")
-        selected = dict(filter_purchases_by_price(purchases, max_price))
+        selected = list(filter_purchases_by_price(purchases, max_price))
         show_purchases(selected, participations)
     elif choice == 4:
-        show_purchases(dict(sort_purchases(purchases)), participations)
+        show_purchases(sort_purchases(purchases), participations)
     elif choice == 5:
-        join_action(purchases, participations)
+        show_users(users)
     elif choice == 6:
-        cancel_action(participations)
+        create_new_participation(purchases, users, participations)
     elif choice == 7:
-        show_participations(participations, purchases)
+        cancel_action(participations)
+    elif choice == 8:
+        show_participations(participations)
     else:
         print("Неизвестный пункт меню.")
 
@@ -124,14 +138,19 @@ def process(
 def main() -> None:
     """Запустить главное меню приложения."""
     purchases = load_purchases(PURCHASES_FILE)
-    participations = load_participations(PARTICIPATIONS_FILE)
+    users = load_users(USERS_FILE)
+    participations = load_participations(
+        PARTICIPATIONS_FILE,
+        purchases,
+        users,
+    )
     while True:
         print(MENU)
         choice = input_int("Выберите действие: ")
         if choice == 0:
             print("Выход из программы.")
             break
-        process(choice, purchases, participations)
+        process(choice, purchases, users, participations)
         save_participations(PARTICIPATIONS_FILE, participations)
 
 
