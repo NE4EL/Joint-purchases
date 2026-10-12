@@ -78,6 +78,17 @@ def cancel_participation(
     return False
 
 
+def find_participation_by_id(
+    participations: list[Participation],
+    participation_id: int,
+) -> Participation | None:
+    """Найти участие по идентификатору."""
+    for item in participations:
+        if item.id == participation_id:
+            return item
+    return None
+
+
 def purchase_status(
     participations: list[Participation],
     purchase: Purchase,
