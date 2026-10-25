@@ -1,0 +1,19 @@
+<article class="card purchase-card mb-3">
+    <div class="card-body">
+        <h2 class="card-title">
+            {{ purchase.product|default:"Без названия" }}
+        </h2>
+        <p class="card-text">
+            Цена: {{ purchase.price }} руб.
+        </p>
+        <p class="card-text">
+            Участников: до {{ purchase.max_participants }}
+        </p>
+        <a
+            href="{% url 'purchases:detail' purchase.id %}"
+            class="btn btn-primary"
+        >
+            Подробнее
+        </a>
+    </div>
+</article>

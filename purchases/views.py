@@ -1,85 +1,94 @@
-"""View-функции раздела совместных покупок."""
+"""View-функции раздела совместных покупок (данные из SQLite)."""
+
+import sqlite3
 
 from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
 
-from homepage.views import page
-from models.participations import count_active, purchase_status
-from models.purchases import find_purchase_by_id
-from storage import load_participations, load_purchases, load_users
-
-PURCHASES_FILE = "data/purchases.json"
-USERS_FILE = "data/users.json"
-PARTICIPATIONS_FILE = "data/participations.json"
+from db.database import get_connection
 
 
 def purchases(request: HttpRequest) -> HttpResponse:
-    """Страница со списком совместных покупок."""
-    items = ""
-    for purchase in load_purchases(PURCHASES_FILE):
-        text = f"{purchase.product} — {purchase.price} руб."
-        items += (
-            f'<li class="list-group-item">'
-            f'<a href="/purchases/{purchase.id}/">{text}</a>'
-            f'</li>'
-        )
-    content = f"""
-    <h1>Совместные покупки</h1>
-    <ul class="list-group">{items}</ul>
-    """
-    return HttpResponse(page("Совместные покупки", content))
+    """Страница со списком совместных покупок из базы данных."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    purchase_list = conn.execute(
+        """
+        SELECT
+            id,
+            product,
+            price,
+            min_participants,
+            max_participants
+        FROM purchases
+        ORDER BY product
+        """,
+    ).fetchall()
+    conn.close()
+    return render(
+        request,
+        "purchases/purchase_list.html",
+        {"purchases": purchase_list},
+    )
 
 
 def purchase_detail(
     request: HttpRequest,
     purchase_id: int,
 ) -> HttpResponse:
-    """Страница отдельной совместной покупки."""
-    purchases_list = load_purchases(PURCHASES_FILE)
-    purchase = find_purchase_by_id(purchases_list, purchase_id)
-    if purchase is None:
-        content = """
-        <h1 class="text-danger">Покупка не найдена</h1>
-        <a href="/purchases/" class="btn btn-outline-secondary">
-            ← к списку покупок
-        </a>
+    """Страница отдельной покупки (значение передаётся параметром)."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    purchase = conn.execute(
         """
-        return HttpResponse(
-            page("Покупка не найдена", content),
-            status=404,
-        )
-    users_list = load_users(USERS_FILE)
-    participations_list = load_participations(
-        PARTICIPATIONS_FILE,
-        purchases_list,
-        users_list,
+        SELECT
+            id,
+            product,
+            price,
+            min_participants,
+            max_participants
+        FROM purchases
+        WHERE id = ?
+        """,
+        [purchase_id],
+    ).fetchone()
+    conn.close()
+    return render(
+        request,
+        "purchases/purchase_detail.html",
+        {"purchase": purchase},
+        status=404 if purchase is None else 200,
     )
-    current = count_active(participations_list, purchase)
-    status = purchase_status(participations_list, purchase)
-    cost = purchase.participant_cost(5)
-    content = f"""
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">{purchase.product}</h5>
-            <p class="card-text"><strong>ID:</strong> {purchase.id}</p>
-            <p class="card-text">
-                <strong>Цена:</strong> {purchase.price} руб.
-            </p>
-            <p class="card-text">
-                <strong>Участников:</strong>
-                {current}/{purchase.max_participants}
-            </p>
-            <p class="card-text">
-                <strong>Стоимость участия (комиссия 5%):</strong>
-                {cost} руб.
-            </p>
-            <p class="card-text">
-                <span class="badge bg-info">{status}</span>
-            </p>
-            <a href="/purchases/"
-               class="btn btn-outline-secondary">
-                ← к списку покупок
-            </a>
-        </div>
-    </div>
-    """
-    return HttpResponse(page(purchase.product, content))
+
+
+def search(request: HttpRequest) -> HttpResponse:
+    """Подбор покупок в пределах заданного бюджета (параметр цены)."""
+    max_price = request.GET.get("max_price")
+    purchase_list = []
+    if max_price:
+        try:
+            limit = float(max_price)
+        except ValueError:
+            limit = None
+        if limit is not None:
+            conn = get_connection()
+            conn.row_factory = sqlite3.Row
+            purchase_list = conn.execute(
+                """
+                SELECT
+                    id,
+                    product,
+                    price,
+                    max_participants
+                FROM purchases
+                WHERE price <= ?
+                ORDER BY price
+                """,
+                [limit],
+            ).fetchall()
+            conn.close()
+    return render(
+        request,
+        "purchases/purchase_search.html",
+        {"purchases": purchase_list, "max_price": max_price},
+    )

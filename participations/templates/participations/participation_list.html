@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Участия — Совместные покупки{% endblock %}
+
+{% block content %}
+    <h1>Участия в покупках</h1>
+    <p>Всего участий: {{ participations|length }}</p>
+
+    <ul class="list-group">
+        {% for participation in participations %}
+            <li class="list-group-item d-flex justify-content-between">
+                <a href="{% url 'participations:detail' participation.id %}">
+                    {{ participation.user_name }} —
+                    {{ participation.product }}
+                </a>
+                {% include "participations/includes/participation_status.html" %}
+            </li>
+        {% empty %}
+            <li class="list-group-item">Участия не найдены.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

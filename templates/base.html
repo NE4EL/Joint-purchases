@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Совместные покупки{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'homepage/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'homepage/css/style.css' %}">
+</head>
+<body>
+    <header class="border-bottom mb-4">
+        <div class="container d-flex flex-wrap align-items-center py-2">
+            <a class="d-flex align-items-center me-3"
+               href="{% url 'homepage:index' %}">
+                <img
+                    src="{% static 'homepage/img/logo.png' %}"
+                    alt="Совместные покупки"
+                    class="jp-logo"
+                >
+            </a>
+            {% include "includes/navigation.html" %}
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container mt-5 py-3 border-top text-muted">
+        <p class="mb-0">© <span id="current-year"></span> Совместные покупки</p>
+    </footer>
+
+    <script src="{% static 'homepage/js/main.js' %}"></script>
+</body>
+</html>

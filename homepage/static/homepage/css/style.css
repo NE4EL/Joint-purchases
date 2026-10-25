@@ -1,0 +1,25 @@
+body {
+    min-height: 100vh;
+}
+
+.jp-logo {
+    height: 44px;
+    width: auto;
+}
+
+.nav .nav-link {
+    padding: 0.25rem 0.6rem;
+}
+
+.purchase-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.participation-status {
+    font-weight: 600;
+}
+
+.participation-status-cancelled {
+    opacity: 0.75;
+}

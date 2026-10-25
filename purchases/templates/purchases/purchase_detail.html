@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if purchase %}
+        {{ purchase.product }} — Совместные покупки
+    {% else %}
+        Покупка не найдена — Совместные покупки
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if purchase %}
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title">{{ purchase.product }}</h1>
+                <p class="card-text">
+                    <strong>ID:</strong> {{ purchase.id }}
+                </p>
+                <p class="card-text">
+                    <strong>Цена:</strong> {{ purchase.price }} руб.
+                </p>
+                <p class="card-text">
+                    <strong>Минимум участников:</strong>
+                    {{ purchase.min_participants }}
+                </p>
+                <p class="card-text">
+                    <strong>Максимум участников:</strong>
+                    {{ purchase.max_participants }}
+                </p>
+            </div>
+        </div>
+    {% else %}
+        <h1 class="text-danger">Покупка не найдена</h1>
+        <p>Покупка с указанным идентификатором отсутствует.</p>
+    {% endif %}
+
+    <a
+        href="{% url 'purchases:list' %}"
+        class="btn btn-outline-secondary mt-3"
+    >
+        ← к списку покупок
+    </a>
+{% endblock %}

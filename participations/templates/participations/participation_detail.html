@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if participation %}
+        Участие №{{ participation.id }} — Совместные покупки
+    {% else %}
+        Участие не найдено — Совместные покупки
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if participation %}
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title">
+                    Участие №{{ participation.id }}
+                </h1>
+                <p class="card-text">
+                    <strong>Товар:</strong>
+                    {{ participation.product }}
+                </p>
+                <p class="card-text">
+                    <strong>Пользователь:</strong>
+                    {{ participation.user_name }}
+                </p>
+                <p class="card-text">
+                    <strong>Статус:</strong>
+                    {% include "participations/includes/participation_status.html" %}
+                </p>
+            </div>
+        </div>
+    {% else %}
+        <h1 class="text-danger">Участие не найдено</h1>
+        <p>Участие с указанным идентификатором отсутствует.</p>
+    {% endif %}
+
+    <a
+        href="{% url 'participations:list' %}"
+        class="btn btn-outline-secondary mt-3"
+    >
+        ← к списку участий
+    </a>
+{% endblock %}

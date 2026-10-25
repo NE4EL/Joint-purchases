@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Главная — Совместные покупки{% endblock %}
+
+{% block content %}
+    <h1 class="display-4">Платформа совместных покупок</h1>
+    <p class="lead">Совместные покупки товаров оптом.</p>
+    <p>Основные разделы:</p>
+    <a href="{% url 'purchases:list' %}" class="btn btn-primary me-2">
+        Покупки
+    </a>
+    <a href="{% url 'participations:list' %}" class="btn btn-secondary">
+        Участия
+    </a>
+{% endblock %}

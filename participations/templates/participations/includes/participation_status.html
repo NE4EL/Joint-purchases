@@ -1,0 +1,9 @@
+{% if participation.is_cancelled %}
+    <span class="badge bg-secondary participation-status participation-status-cancelled">
+        Отменено
+    </span>
+{% else %}
+    <span class="badge bg-success participation-status participation-status-active">
+        Активно
+    </span>
+{% endif %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Покупки — Совместные покупки{% endblock %}
+
+{% block content %}
+    <h1>Совместные покупки</h1>
+    <p>Всего покупок: {{ purchases|length }}</p>
+
+    <a href="{% url 'purchases:search' %}" class="btn btn-outline-primary mb-3">
+        Подобрать по бюджету
+    </a>
+
+    <div class="purchase-list">
+        {% for purchase in purchases %}
+            {% include "purchases/includes/purchase_card.html" %}
+        {% empty %}
+            <p>Покупки не найдены.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

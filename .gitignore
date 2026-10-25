@@ -20,3 +20,9 @@ env/
 # Screenshots / прочие локальные изображения
 Снимок экрана*.png
 *.png
+# но статические изображения проекта (логотип) хранятся в репозитории
+!homepage/static/homepage/img/logo.png
+
+# Django
+db.sqlite3
+*.sqlite3

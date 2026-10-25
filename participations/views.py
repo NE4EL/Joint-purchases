@@ -1,91 +1,89 @@
-"""View-функции раздела участий в покупках."""
+"""View-функции раздела участий в покупках (данные из SQLite)."""
+
+import sqlite3
 
 from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
 
-from homepage.views import page
-from models.participations import find_participation_by_id
-from storage import load_participations, load_purchases, load_users
-
-PURCHASES_FILE = "data/purchases.json"
-USERS_FILE = "data/users.json"
-PARTICIPATIONS_FILE = "data/participations.json"
-
-
-def _load_all() -> list:
-    """Загрузить участия со связями на покупки и пользователей."""
-    purchases_list = load_purchases(PURCHASES_FILE)
-    users_list = load_users(USERS_FILE)
-    return load_participations(
-        PARTICIPATIONS_FILE,
-        purchases_list,
-        users_list,
-    )
+from db.database import get_connection
 
 
 def participations(request: HttpRequest) -> HttpResponse:
-    """Страница со списком участий."""
-    items = ""
-    for item in _load_all():
-        state = "отменено" if item.is_cancelled else "активно"
-        badge = "bg-secondary" if item.is_cancelled else "bg-success"
-        items += f"""
-        <li class="list-group-item d-flex justify-content-between">
-            <a href="/participations/{item.id}/">
-                {item.user.name} — {item.purchase.product}
-            </a>
-            <span class="badge {badge}">{state}</span>
-        </li>
+    """Список участий со связанными товаром и пользователем (JOIN)."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    participation_list = conn.execute(
         """
-    content = f"""
-    <h1>Участия в покупках</h1>
-    <ul class="list-group">{items}</ul>
-    """
-    return HttpResponse(page("Участия в покупках", content))
+        SELECT
+            participations.id,
+            participations.is_cancelled,
+            purchases.product,
+            users.name AS user_name
+        FROM participations
+        JOIN purchases ON participations.purchase_id = purchases.id
+        JOIN users ON participations.user_id = users.id
+        ORDER BY participations.id
+        """,
+    ).fetchall()
+    conn.close()
+    return render(
+        request,
+        "participations/participation_list.html",
+        {"participations": participation_list},
+    )
 
 
 def participation_detail(
     request: HttpRequest,
     participation_id: int,
 ) -> HttpResponse:
-    """Страница отдельного участия."""
-    participation = find_participation_by_id(
-        _load_all(),
-        participation_id,
-    )
-    if participation is None:
-        content = """
-        <h1 class="text-danger">Участие не найдено</h1>
-        <a href="/participations/"
-           class="btn btn-outline-secondary">
-            ← к списку участий
-        </a>
+    """Отдельное участие (JOIN, значение передаётся параметром)."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    participation = conn.execute(
         """
-        return HttpResponse(
-            page("Участие не найдено", content),
-            status=404,
-        )
-    cancelled = participation.is_cancelled
-    state = "отменено" if cancelled else "активно"
-    badge = "bg-secondary" if cancelled else "bg-success"
-    content = f"""
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Участие №{participation.id}</h5>
-            <p class="card-text">
-                Товар: {participation.purchase.product}
-            </p>
-            <p class="card-text">
-                Пользователь: {participation.user.name}
-            </p>
-            <p class="card-text">
-                Статус: <span class="badge {badge}">{state}</span>
-            </p>
-            <a href="/participations/"
-               class="btn btn-outline-secondary">
-                ← к списку участий
-            </a>
-        </div>
-    </div>
-    """
-    title = f"Участие №{participation.id}"
-    return HttpResponse(page(title, content))
+        SELECT
+            participations.id,
+            participations.is_cancelled,
+            purchases.product,
+            users.name AS user_name
+        FROM participations
+        JOIN purchases ON participations.purchase_id = purchases.id
+        JOIN users ON participations.user_id = users.id
+        WHERE participations.id = ?
+        """,
+        [participation_id],
+    ).fetchone()
+    conn.close()
+    return render(
+        request,
+        "participations/participation_detail.html",
+        {"participation": participation},
+        status=404 if participation is None else 200,
+    )
+
+
+def statistics(request: HttpRequest) -> HttpResponse:
+    """Статистика: число активных участников по каждой покупке."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    stats = conn.execute(
+        """
+        SELECT
+            purchases.product,
+            purchases.min_participants,
+            COUNT(participations.id) AS participants_count
+        FROM purchases
+        LEFT JOIN participations
+            ON purchases.id = participations.purchase_id
+            AND participations.is_cancelled = 0
+        GROUP BY purchases.id, purchases.product
+        ORDER BY participants_count DESC
+        """,
+    ).fetchall()
+    conn.close()
+    return render(
+        request,
+        "participations/statistics.html",
+        {"statistics": stats},
+    )
